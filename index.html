@@ -144,6 +144,24 @@ function loadPrizeImages() {
     })
   );
 }
+    function wrapText(text, maxCharsPerLine) {
+  const words = text.split(" ");
+  const lines = [];
+  let currentLine = "";
+
+  for (const word of words) {
+    const testLine = currentLine ? currentLine + " " + word : word;
+    if (testLine.length <= maxCharsPerLine) {
+      currentLine = testLine;
+    } else {
+      if (currentLine) lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+
+  if (currentLine) lines.push(currentLine);
+  return lines;
+}
     
 
     const $ = (id) => document.getElementById(id);
@@ -330,18 +348,23 @@ function loadPrizeImages() {
   const r = Math.min(W,H)*0.38;
 
   ctx.clearRect(0,0,W,H);
+
+  // aro exterior
   ctx.beginPath();
   ctx.arc(cx,cy,r+30,0,Math.PI*2);
   ctx.fillStyle="rgba(255,255,255,0.04)";
   ctx.fill();
 
-  const n = PRIZES.length, slice = (Math.PI*2)/n;
+  const n = PRIZES.length;
+  const slice = (Math.PI*2)/n;
 
   for (let i=0;i<n;i++){
     const start = angle + i*slice;
     const end = start + slice;
     const prize = PRIZES[i];
+    const mid = start + slice/2;
 
+    // sector
     ctx.beginPath();
     ctx.moveTo(cx,cy);
     ctx.arc(cx,cy,r,start,end);
@@ -352,31 +375,46 @@ function loadPrizeImages() {
     ctx.lineWidth=2;
     ctx.stroke();
 
+    // rotación común para texto + imagen
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(mid);
+
+    // TEXTO
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = "rgba(233,238,252,0.95)";
+    ctx.font = "900 22px system-ui";
+
+    // posición del texto
+    const textRadius = r * 0.67;
+    ctx.save();
+    ctx.translate(Math.cos(0) * textRadius, Math.sin(0) * textRadius);
+    ctx.rotate(Math.PI / 2); // misma orientación para todos dentro del sector
+
+    const lines = wrapText(prize.label, 12);
+    lines.forEach((line, idx) => {
+      ctx.fillText(line, 0, idx * 26 - ((lines.length - 1) * 13));
+    });
+    ctx.restore();
+
+    // IMAGEN debajo del texto
     const img = prizeImages[prize.label];
     if (img) {
-      const mid = start + slice/2;
-      const imgRadius = r * 0.58;
-      const imgX = cx + Math.cos(mid) * imgRadius;
-      const imgY = cy + Math.sin(mid) * imgRadius;
-      const imgSize = 68;
+      const imgRadius = r * 0.48;
+      const imgSize = 62;
 
       ctx.save();
-      ctx.translate(imgX, imgY);
-      ctx.rotate(mid + Math.PI/2);
-      ctx.drawImage(img, -imgSize/2, -imgSize/2 - 18, imgSize, imgSize);
+      ctx.translate(Math.cos(0) * imgRadius, Math.sin(0) * imgRadius);
+      ctx.rotate(Math.PI / 2); // misma orientación que el texto
+      ctx.drawImage(img, -imgSize/2, -imgSize/2, imgSize, imgSize);
       ctx.restore();
     }
 
-    ctx.save();
-    ctx.translate(cx,cy);
-    ctx.rotate(start + slice/2);
-    ctx.textAlign="right";
-    ctx.fillStyle="rgba(233,238,252,0.95)";
-    ctx.font="900 24px system-ui";
-    ctx.fillText(prize.label, r-24, 55);
     ctx.restore();
   }
 
+  // centro
   ctx.beginPath();
   ctx.arc(cx,cy,56,0,Math.PI*2);
   ctx.fillStyle="rgba(0,0,0,0.25)";
@@ -386,7 +424,8 @@ function loadPrizeImages() {
   ctx.fillStyle="rgba(233,238,252,0.95)";
   ctx.font="900 26px system-ui";
   ctx.textAlign="center";
-  ctx.fillText("GIRA", cx, cy+9);
+  ctx.textBaseline="middle";
+  ctx.fillText("GIRA", cx, cy+2);
 }
 
     function normalizeAngle(a){ const twoPi=Math.PI*2; return ((a%twoPi)+twoPi)%twoPi; }
