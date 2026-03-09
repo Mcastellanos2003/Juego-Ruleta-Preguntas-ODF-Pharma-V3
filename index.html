@@ -351,7 +351,7 @@
   const a = normalizeAngle(pointerAngle - finalAngle);
   const index = Math.floor(a / slice) % n;
 
-  return PRIZES[index];
+  return PRIZES[index].label;
 }
 
     function resetWheel(){
